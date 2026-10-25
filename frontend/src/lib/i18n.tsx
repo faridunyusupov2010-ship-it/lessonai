@@ -1,0 +1,422 @@
+"use client";
+
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ApiError, type UILang } from "./api";
+
+export type Lang = UILang;
+const LANG_KEY = "lessonai_lang";
+
+const tg = {
+  nav_tests: "Тестҳо",
+  nav_new: "Тести нав",
+  logout: "Баромадан",
+  tagline: "Тест ва машқҳо барои дарси англисӣ дар чанд сония.",
+  login_title: "Ворид шудан",
+  register_title: "Сабти ном",
+  email: "Почтаи электронӣ",
+  password: "Парол",
+  password_hint: "Ҳадди аққал 8 аломат",
+  full_name: "Ному насаб",
+  ui_language: "Забони интерфейс",
+  login_btn: "Ворид шудан",
+  register_btn: "Ҳисоб сохтан",
+  no_account: "Ҳисоб надоред?",
+  have_account: "Ҳисоб доред?",
+  go_register: "Сабти ном",
+  go_login: "Ворид шудан",
+  my_tests: "Тестҳои ман",
+  new_test: "Тести нав",
+  usage: "{n} аз {max} тест дар ин моҳ",
+  empty_title: "Ҳанӯз тест надоред",
+  empty_text: "Мавзӯъ ва сатҳро нависед, AI тестро тайёр мекунад.",
+  create_first: "Аввалин тестро созед",
+  questions_count: "{n} савол",
+  status_draft: "Чернова",
+  status_published: "Нашр шудааст",
+  status_archived: "Дар бойгонӣ",
+  retry: "Боз кӯшиш кардан",
+  load_error: "Тестҳо бор нашуданд.",
+  gen_title: "Тести нав",
+  gen_sub: "Мавзӯъро нависед, AI саволҳоро месозад. Баъд ҳар саволро метавонед таҳрир кунед.",
+  topic: "Мавзӯъ",
+  topic_ph: "Масалан: Present Perfect",
+  level: "Сатҳ",
+  types: "Намуди саволҳо",
+  type_mc: "Интихоби ҷавоб",
+  type_fb: "Ҷойи холиро пур кунед",
+  type_tf: "Дуруст ё нодуруст",
+  count: "Шумораи саволҳо",
+  title_opt: "Номи тест (ихтиёрӣ)",
+  generate_btn: "Тест сохтан",
+  generating: "AI саволҳоро месозад…",
+  generating_hint: "Одатан аз 10 то 30 сония.",
+  pick_type: "Ҳадди аққал як намуди савол интихоб кунед.",
+  lvl_A1: "Оғоз",
+  lvl_A2: "Ибтидоӣ",
+  lvl_B1: "Миёна",
+  lvl_B2: "Болотар аз миёна",
+  lvl_C1: "Пешрафта",
+  lvl_C2: "Хеле пешрафта",
+  back: "Ба рӯйхат",
+  test_title: "Номи тест",
+  save: "Захира кардан",
+  edit: "Таҳрир кардан",
+  cancel: "Бекор кардан",
+  delete_test: "Нест кардани тест",
+  remove_q: "Хориҷ кардан",
+  confirm_delete_test: "Тест бо ҳамаи натиҷаҳояш нест карда мешавад. Давом медиҳем?",
+  confirm_remove_q: "Савол аз ин тест хориҷ карда мешавад. Давом медиҳем?",
+  publish: "Нашр кардан",
+  unpublish: "Ба чернова гардондан",
+  share_link: "Истиноди хонанда",
+  copy: "Нусха гирифтан",
+  copied: "Нусха шуд",
+  link_soon: "Истинод танҳо баъд аз «Нашр кардан» барои хонандагон кушода мешавад.",
+  correct_answer: "Ҷавоби дуруст",
+  explanation: "Шарҳ",
+  options: "Вариантҳо",
+  prompt: "Матни савол",
+  accepted_answers: "Ҷавобҳои қобили қабул (ҳар кадом дар сатри алоҳида)",
+  topic_tag: "Мавзӯи хурд",
+  export_title: "Содирот",
+  export_student: "Варақа барои хонанда (бе ҷавоб)",
+  export_key: "Ҷавобнома барои омӯзгор",
+  export_print: "PDF / чоп",
+  export_word: "Word",
+  export_pdf_hint: "PDF: дар равзанаи чоп «Save as PDF»-ро интихоб кунед.",
+  print_btn: "Чоп ё захира ҳамчун PDF",
+  st_your_name: "Ному насаби шумо",
+  st_start: "Оғоз кардан",
+  st_answered: "Ҷавоб дода шуд: {n} аз {max}",
+  st_submit: "Супоридани тест",
+  st_confirm_unanswered: "Ба {n} савол ҷавоб надодаед. Ба ҳар ҳол месупоред?",
+  st_not_found: "Тест ёфт нашуд ё ҳоло барои хонандагон нашр нашудааст.",
+  st_result: "Натиҷаи шумо",
+  st_review: "Санҷиши ҷавобҳо",
+  st_your_answer: "Ҷавоби шумо",
+  st_no_answer: "Ҷавоб нест",
+  st_correct: "Дуруст",
+  st_wrong: "Нодуруст",
+  st_fill_ph: "Ҷавобро нависед",
+  res_student_answer: "Ҷавоби хонанда",
+  results_title: "Натиҷаҳо",
+  results_empty: "Ҳанӯз касе тестро нагузаштааст. Истинодро ба хонандагон фиристед.",
+  results_avg: "Миёнаи натиҷа",
+  results_count: "Шумораи супоридан",
+  results_students: "Хонандагон",
+  results_hard: "Саволҳо аз рӯи дурустии ҷавобҳо",
+  of_n: "{n} аз {max}",
+  err_fill_all: "Матни савол, вариантҳо ва ҷавоби дурустро пур кунед.",
+  err_generic: "Хатои номаълум. Баъдтар боз кӯшиш кунед.",
+  err_network: "Сервер ҷавоб намедиҳад. Боварӣ ҳосил кунед, ки backend кор мекунад.",
+  err_credentials: "Почта ё парол нодуруст аст.",
+  err_quota: "Лимити моҳонаи нақшаи ройгон (20 тест) пур шуд.",
+  err_email_taken: "Ин почта аллакай сабт шудааст.",
+  err_invalid: "Маълумот нодуруст аст. Майдонҳоро санҷед.",
+  err_llm_config: "Модели AI танзим нашудааст. LLM_API_KEY ва LLM_MODEL-ро дар .env санҷед.",
+  err_llm: "AI натиҷаи дуруст надод. Боз кӯшиш кунед. Эҳтимол лимити провайдери ройгон пур шудааст.",
+} as const;
+
+export type Key = keyof typeof tg;
+
+const ru: Record<Key, string> = {
+  nav_tests: "Тесты",
+  nav_new: "Новый тест",
+  logout: "Выйти",
+  tagline: "Тесты и упражнения для урока английского за несколько секунд.",
+  login_title: "Вход",
+  register_title: "Регистрация",
+  email: "Электронная почта",
+  password: "Пароль",
+  password_hint: "Не менее 8 символов",
+  full_name: "Имя и фамилия",
+  ui_language: "Язык интерфейса",
+  login_btn: "Войти",
+  register_btn: "Создать аккаунт",
+  no_account: "Нет аккаунта?",
+  have_account: "Уже есть аккаунт?",
+  go_register: "Регистрация",
+  go_login: "Войти",
+  my_tests: "Мои тесты",
+  new_test: "Новый тест",
+  usage: "{n} из {max} тестов в этом месяце",
+  empty_title: "Пока нет тестов",
+  empty_text: "Укажите тему и уровень, и AI подготовит тест.",
+  create_first: "Создать первый тест",
+  questions_count: "Вопросов: {n}",
+  status_draft: "Черновик",
+  status_published: "Опубликован",
+  status_archived: "В архиве",
+  retry: "Повторить",
+  load_error: "Не удалось загрузить тесты.",
+  gen_title: "Новый тест",
+  gen_sub: "Напишите тему, и AI составит вопросы. Потом каждый вопрос можно отредактировать.",
+  topic: "Тема",
+  topic_ph: "Например: Present Perfect",
+  level: "Уровень",
+  types: "Типы вопросов",
+  type_mc: "Выбор ответа",
+  type_fb: "Заполните пропуск",
+  type_tf: "Верно или неверно",
+  count: "Количество вопросов",
+  title_opt: "Название теста (необязательно)",
+  generate_btn: "Создать тест",
+  generating: "AI составляет вопросы…",
+  generating_hint: "Обычно 10–30 секунд.",
+  pick_type: "Выберите хотя бы один тип вопросов.",
+  lvl_A1: "Начальный",
+  lvl_A2: "Элементарный",
+  lvl_B1: "Средний",
+  lvl_B2: "Выше среднего",
+  lvl_C1: "Продвинутый",
+  lvl_C2: "Свободный",
+  back: "К списку",
+  test_title: "Название теста",
+  save: "Сохранить",
+  edit: "Редактировать",
+  cancel: "Отмена",
+  delete_test: "Удалить тест",
+  remove_q: "Убрать",
+  confirm_delete_test: "Тест будет удалён вместе со всеми результатами. Продолжить?",
+  confirm_remove_q: "Вопрос будет убран из этого теста. Продолжить?",
+  publish: "Опубликовать",
+  unpublish: "Вернуть в черновик",
+  share_link: "Ссылка для учеников",
+  copy: "Копировать",
+  copied: "Скопировано",
+  link_soon: "Ссылка откроется для учеников только после «Опубликовать».",
+  correct_answer: "Правильный ответ",
+  explanation: "Пояснение",
+  options: "Варианты",
+  prompt: "Текст вопроса",
+  accepted_answers: "Допустимые ответы (каждый с новой строки)",
+  topic_tag: "Подтема",
+  export_title: "Экспорт",
+  export_student: "Лист для ученика (без ответов)",
+  export_key: "Ответы для преподавателя",
+  export_print: "PDF / печать",
+  export_word: "Word",
+  export_pdf_hint: "PDF: в окне печати выберите «Сохранить как PDF».",
+  print_btn: "Печать или сохранить как PDF",
+  st_your_name: "Ваше имя и фамилия",
+  st_start: "Начать",
+  st_answered: "Отвечено: {n} из {max}",
+  st_submit: "Сдать тест",
+  st_confirm_unanswered: "Вы не ответили на вопросов: {n}. Всё равно сдать?",
+  st_not_found: "Тест не найден или ещё не опубликован.",
+  st_result: "Ваш результат",
+  st_review: "Разбор ответов",
+  st_your_answer: "Ваш ответ",
+  st_no_answer: "Нет ответа",
+  st_correct: "Верно",
+  st_wrong: "Неверно",
+  st_fill_ph: "Введите ответ",
+  res_student_answer: "Ответ ученика",
+  results_title: "Результаты",
+  results_empty: "Пока никто не прошёл тест. Отправьте ссылку ученикам.",
+  results_avg: "Средний результат",
+  results_count: "Прохождений",
+  results_students: "Ученики",
+  results_hard: "Вопросы по доле правильных ответов",
+  of_n: "{n} из {max}",
+  err_fill_all: "Заполните текст вопроса, варианты и правильный ответ.",
+  err_generic: "Неизвестная ошибка. Попробуйте позже.",
+  err_network: "Сервер не отвечает. Проверьте, что backend запущен.",
+  err_credentials: "Неверная почта или пароль.",
+  err_quota: "Месячный лимит бесплатного плана (20 тестов) исчерпан.",
+  err_email_taken: "Эта почта уже зарегистрирована.",
+  err_invalid: "Неверные данные. Проверьте поля.",
+  err_llm_config: "Модель AI не настроена. Проверьте LLM_API_KEY и LLM_MODEL в .env.",
+  err_llm: "AI не вернул корректный результат. Повторите. Возможно, исчерпан лимит бесплатного провайдера.",
+};
+
+const en: Record<Key, string> = {
+  nav_tests: "Tests",
+  nav_new: "New test",
+  logout: "Log out",
+  tagline: "Tests and exercises for your English lesson in seconds.",
+  login_title: "Log in",
+  register_title: "Create account",
+  email: "Email",
+  password: "Password",
+  password_hint: "At least 8 characters",
+  full_name: "Full name",
+  ui_language: "Interface language",
+  login_btn: "Log in",
+  register_btn: "Create account",
+  no_account: "No account yet?",
+  have_account: "Already have an account?",
+  go_register: "Sign up",
+  go_login: "Log in",
+  my_tests: "My tests",
+  new_test: "New test",
+  usage: "{n} of {max} tests this month",
+  empty_title: "No tests yet",
+  empty_text: "Enter a topic and level and AI will prepare the test.",
+  create_first: "Create your first test",
+  questions_count: "{n} questions",
+  status_draft: "Draft",
+  status_published: "Published",
+  status_archived: "Archived",
+  retry: "Try again",
+  load_error: "Could not load tests.",
+  gen_title: "New test",
+  gen_sub: "Type a topic and AI writes the questions. You can edit every question afterwards.",
+  topic: "Topic",
+  topic_ph: "For example: Present Perfect",
+  level: "Level",
+  types: "Question types",
+  type_mc: "Multiple choice",
+  type_fb: "Fill in the blank",
+  type_tf: "True or false",
+  count: "Number of questions",
+  title_opt: "Test title (optional)",
+  generate_btn: "Create test",
+  generating: "AI is writing the questions…",
+  generating_hint: "Usually 10–30 seconds.",
+  pick_type: "Choose at least one question type.",
+  lvl_A1: "Beginner",
+  lvl_A2: "Elementary",
+  lvl_B1: "Intermediate",
+  lvl_B2: "Upper-intermediate",
+  lvl_C1: "Advanced",
+  lvl_C2: "Proficient",
+  back: "Back to list",
+  test_title: "Test title",
+  save: "Save",
+  edit: "Edit",
+  cancel: "Cancel",
+  delete_test: "Delete test",
+  remove_q: "Remove",
+  confirm_delete_test: "The test and all its results will be deleted. Continue?",
+  confirm_remove_q: "The question will be removed from this test. Continue?",
+  publish: "Publish",
+  unpublish: "Move back to draft",
+  share_link: "Student link",
+  copy: "Copy",
+  copied: "Copied",
+  link_soon: "The link opens for students only after you publish the test.",
+  correct_answer: "Correct answer",
+  explanation: "Explanation",
+  options: "Options",
+  prompt: "Question text",
+  accepted_answers: "Accepted answers (one per line)",
+  topic_tag: "Sub-topic",
+  export_title: "Export",
+  export_student: "Student sheet (no answers)",
+  export_key: "Answer key for the teacher",
+  export_print: "PDF / print",
+  export_word: "Word",
+  export_pdf_hint: "PDF: choose “Save as PDF” in the print dialog.",
+  print_btn: "Print or save as PDF",
+  st_your_name: "Your full name",
+  st_start: "Start",
+  st_answered: "Answered: {n} of {max}",
+  st_submit: "Submit test",
+  st_confirm_unanswered: "You left {n} questions unanswered. Submit anyway?",
+  st_not_found: "Test not found or not published yet.",
+  st_result: "Your result",
+  st_review: "Answer review",
+  st_your_answer: "Your answer",
+  st_no_answer: "No answer",
+  st_correct: "Correct",
+  st_wrong: "Wrong",
+  st_fill_ph: "Type your answer",
+  res_student_answer: "Student's answer",
+  results_title: "Results",
+  results_empty: "Nobody has taken the test yet. Send the link to your students.",
+  results_avg: "Average score",
+  results_count: "Attempts",
+  results_students: "Students",
+  results_hard: "Questions by share of correct answers",
+  of_n: "{n} of {max}",
+  err_fill_all: "Fill in the question text, options and the correct answer.",
+  err_generic: "Unknown error. Please try again later.",
+  err_network: "The server is not responding. Make sure the backend is running.",
+  err_credentials: "Incorrect email or password.",
+  err_quota: "Monthly limit of the free plan (20 tests) reached.",
+  err_email_taken: "This email is already registered.",
+  err_invalid: "Invalid data. Check the fields.",
+  err_llm_config: "The AI model is not configured. Check LLM_API_KEY and LLM_MODEL in .env.",
+  err_llm: "AI returned no valid result. Try again. The free provider's limit may be used up.",
+};
+
+const dict: Record<Lang, Record<Key, string>> = { tg, ru, en };
+
+interface I18nState {
+  lang: Lang;
+  setLang: (l: Lang) => void;
+  t: (key: Key, vars?: Record<string, string | number>) => string;
+  errText: (e: unknown) => string;
+}
+
+const I18nCtx = createContext<I18nState | null>(null);
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [lang, setLangState] = useState<Lang>("tg");
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LANG_KEY);
+      if (saved === "tg" || saved === "ru" || saved === "en") setLangState(saved);
+    } catch {
+      /* storage недоступ аст */
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l);
+    try {
+      localStorage.setItem(LANG_KEY, l);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const t = useCallback(
+    (key: Key, vars?: Record<string, string | number>) => {
+      let s = dict[lang][key];
+      if (vars) for (const [k, v] of Object.entries(vars)) s = s.replace(`{${k}}`, String(v));
+      return s;
+    },
+    [lang],
+  );
+
+  const errText = useCallback(
+    (e: unknown) => {
+      if (!(e instanceof ApiError)) return t("err_generic");
+      switch (e.status) {
+        case 0:
+          return t("err_network");
+        case 401:
+          return t("err_credentials");
+        case 402:
+          return t("err_quota");
+        case 409:
+          return t("err_email_taken");
+        case 422:
+          return t("err_invalid");
+        case 502:
+          return t("err_llm");
+        case 503:
+          return t("err_llm_config");
+        default:
+          return e.message || t("err_generic");
+      }
+    },
+    [t],
+  );
+
+  const value = useMemo(() => ({ lang, setLang, t, errText }), [lang, setLang, t, errText]);
+  return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
+}
+
+export function useI18n(): I18nState {
+  const ctx = useContext(I18nCtx);
+  if (!ctx) throw new Error("useI18n must be used inside I18nProvider");
+  return ctx;
+}
