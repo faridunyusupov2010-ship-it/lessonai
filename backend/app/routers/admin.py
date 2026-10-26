@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from .. import llm
 from ..db import get_db
 from ..deps import get_admin
 from ..models import Attempt, Plan, Teacher, Test
-from ..schemas import AdminPlanIn, AdminPlanOut, AdminStats, AdminTeacher
+from ..schemas import AdminPlanIn, AdminPlanOut, AdminStats, AdminTeacher, LLMProviderStatus
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -84,3 +85,8 @@ def set_plan(
     teacher.plan = body.plan
     db.commit()
     return AdminPlanOut(id=teacher.id, plan=teacher.plan)
+
+
+@router.get("/llm", response_model=list[LLMProviderStatus])
+def llm_status(admin: Teacher = Depends(get_admin)):
+    return llm.providers_status()

@@ -39,6 +39,12 @@ app.include_router(reports.router)
 app.include_router(admin.router)
 
 
+@app.get("/ping")
+def ping() -> dict[str, str]:
+    """Бе база: барои назорати вақти кор (uptime) ва бедор нигоҳ доштани сервер."""
+    return {"status": "ok"}
+
+
 @app.get("/health")
 def health(db: Session = Depends(get_db)) -> dict[str, str]:
     db.execute(text("SELECT 1"))

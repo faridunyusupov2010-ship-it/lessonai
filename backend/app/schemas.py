@@ -1,5 +1,6 @@
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -136,6 +137,7 @@ class AnswerIn(BaseModel):
 class SubmitIn(BaseModel):
     student_name: str = Field(min_length=1, max_length=100)
     answers: list[AnswerIn] = Field(max_length=100)
+    lang: Literal["tg", "ru", "en"] | None = None
 
 
 class PublicQuestion(BaseModel):
@@ -283,3 +285,9 @@ class AdminPlanIn(BaseModel):
 class AdminPlanOut(BaseModel):
     id: uuid.UUID
     plan: Plan
+
+
+class LLMProviderStatus(BaseModel):
+    name: str
+    model: str
+    cooling_seconds: int

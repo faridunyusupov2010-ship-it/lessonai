@@ -37,6 +37,18 @@ export default function ResultsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Забон тағйир ёфт: шарҳҳоро ба забони нав боз мегирем
+  useEffect(() => {
+    setDetails({});
+    if (open) {
+      resultsApi
+        .attempt(open, lang)
+        .then((d) => setDetails({ [open]: d }))
+        .catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
   async function toggle(attemptId: string) {
     if (open === attemptId) {
       setOpen(null);
@@ -45,7 +57,7 @@ export default function ResultsPage() {
     setOpen(attemptId);
     if (!details[attemptId]) {
       try {
-        const d = await resultsApi.attempt(attemptId);
+        const d = await resultsApi.attempt(attemptId, lang);
         setDetails((p) => ({ ...p, [attemptId]: d }));
       } catch (e) {
         setError(errText(e));

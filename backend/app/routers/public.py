@@ -6,12 +6,18 @@ from ..db import get_db
 from ..grading import is_correct
 from ..models import Attempt, AttemptAnswer, Question, Test, TestQuestion, TestStatus, utcnow
 from ..schemas import PublicQuestion, PublicTest, QuestionResult, SubmitIn, SubmitOut
+from ..translate import localize_explanations
 
 router = APIRouter(prefix="/public", tags=["public"])
 
 
 def make_result(
-    q: Question, response, ok: bool, points_awarded: float, points: float
+    q: Question,
+    response,
+    ok: bool,
+    points_awarded: float,
+    points: float,
+    explanation: str | None = None,
 ) -> QuestionResult:
     return QuestionResult(
         question_id=q.id,
@@ -21,7 +27,7 @@ def make_result(
         response=response,
         is_correct=ok,
         correct_answer=q.correct_answer,
-        explanation=q.explanation,
+        explanation=explanation if explanation is not None else q.explanation,
         points_awarded=points_awarded,
         points=points,
     )
@@ -72,7 +78,7 @@ def submit_test(token: str, body: SubmitIn, db: Session = Depends(get_db)):
     db.add(attempt)
     db.flush()
 
-    results: list[QuestionResult] = []
+    graded = []
     score = 0.0
     max_score = 0.0
     for tq in test.test_questions:
@@ -91,11 +97,15 @@ def submit_test(token: str, body: SubmitIn, db: Session = Depends(get_db)):
                 points_awarded=awarded,
             )
         )
-        results.append(make_result(q, response, ok, awarded, tq.points))
+        graded.append((q, response, ok, awarded, tq.points))
 
     attempt.score = score
     attempt.max_score = max_score
     db.commit()
+
+    # Шарҳҳо ба забони хонанда (дар кэш захира мешаванд)
+    expl = localize_explanations(db, [g[0] for g in graded], body.lang)
+    results = [make_result(q, r, ok, aw, pts, expl.get(q.id)) for q, r, ok, aw, pts in graded]
     return SubmitOut(
         attempt_id=attempt.id, score=score, max_score=max_score, results=results
     )

@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import type { TestStatus } from "@/lib/api";
@@ -110,9 +110,26 @@ export function ErrorNote({ children }: { children: React.ReactNode }) {
 }
 
 export function FullSpinner() {
+  const { t } = useI18n();
+  const [slow, setSlow] = useState(false);
+  useEffect(() => {
+    const h = setTimeout(() => setSlow(true), 2500);
+    return () => clearTimeout(h);
+  }, []);
   return (
-    <div className="grid min-h-screen place-items-center">
-      <Loader2 className="h-6 w-6 animate-spin text-pen" aria-label="Loading" />
+    <div className="grid min-h-screen place-items-center px-6">
+      <div className="flex flex-col items-center gap-4 text-center">
+        <p className="text-2xl font-extrabold tracking-tight">
+          Lesson<span className="mark">AI</span>
+        </p>
+        <Loader2 className="h-6 w-6 animate-spin text-pen" aria-hidden />
+        <p
+          aria-live="polite"
+          className={cn("max-w-xs text-sm text-mute transition-opacity duration-500", slow ? "opacity-100" : "opacity-0")}
+        >
+          {t("waking_up")}
+        </p>
+      </div>
     </div>
   );
 }

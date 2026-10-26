@@ -8,6 +8,7 @@ from ..db import get_db
 from ..deps import get_current_teacher
 from ..models import Attempt, AttemptAnswer, Teacher, Test, TestQuestion
 from ..schemas import AttemptDetail, AttemptSummary, QuestionStat, TestResults
+from ..translate import localize_explanations
 from .public import make_result
 
 router = APIRouter(tags=["results"])
@@ -82,6 +83,7 @@ def test_results(
 @router.get("/attempts/{attempt_id}", response_model=AttemptDetail)
 def attempt_detail(
     attempt_id: uuid.UUID,
+    lang: str | None = None,
     db: Session = Depends(get_db),
     teacher: Teacher = Depends(get_current_teacher),
 ):
@@ -102,6 +104,7 @@ def attempt_detail(
         attempt.answers,
         key=lambda a: tqs[a.question_id].position if a.question_id in tqs else 10_000,
     )
+    expl = localize_explanations(db, [a.question for a in answers], lang)
     results = [
         make_result(
             a.question,
@@ -109,6 +112,7 @@ def attempt_detail(
             bool(a.is_correct),
             a.points_awarded,
             tqs[a.question_id].points if a.question_id in tqs else 1.0,
+            expl.get(a.question_id),
         )
         for a in answers
     ]

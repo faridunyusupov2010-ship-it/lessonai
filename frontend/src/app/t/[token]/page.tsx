@@ -50,6 +50,7 @@ export default function StudentPage() {
     try {
       const r = await studentApi.submit(token, {
         student_name: name.trim(),
+        lang,
         answers: Object.entries(answers).map(([question_id, response]) => ({ question_id, response })),
       });
       setResult(r);

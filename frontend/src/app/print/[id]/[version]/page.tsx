@@ -14,7 +14,7 @@ const LETTERS = ["A", "B", "C", "D", "E", "F"];
 export default function PrintPage() {
   const { id, version } = useParams<{ id: string; version: string }>();
   const { teacher, loading } = useAuth();
-  const { t, errText } = useI18n();
+  const { t, lang, errText } = useI18n();
   const router = useRouter();
   const [test, setTest] = useState<Test | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +27,11 @@ export default function PrintPage() {
   useEffect(() => {
     if (!teacher) return;
     api
-      .getTest(id)
+      .getTest(id, lang)
       .then(setTest)
       .catch((e) => setError(errText(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teacher, id]);
+  }, [teacher, id, lang]);
 
   if (error) {
     return (

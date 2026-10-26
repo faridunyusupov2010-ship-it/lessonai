@@ -133,7 +133,7 @@ export const api = {
 
   listTests: () => request<TestSummary[]>("/tests"),
   generateTest: (b: GenerateBody) => request<Test>("/tests/generate", "POST", b),
-  getTest: (id: string) => request<Test>(`/tests/${id}`),
+  getTest: (id: string, lang?: string) => request<Test>(`/tests/${id}${lang ? `?lang=${lang}` : ""}`),
   updateTest: (id: string, b: { title?: string; status?: TestStatus }) =>
     request<Test>(`/tests/${id}`, "PATCH", b),
   deleteTest: (id: string) => request<void>(`/tests/${id}`, "DELETE"),
@@ -238,13 +238,17 @@ export const studentApi = {
   getTest: (token: string) => request<PublicTest>(`/public/tests/${token}`),
   submit: (
     token: string,
-    body: { student_name: string; answers: { question_id: string; response: number | boolean | string }[] },
+    body: {
+      student_name: string;
+      answers: { question_id: string; response: number | boolean | string }[];
+      lang?: string;
+    },
   ) => request<SubmitOut>(`/public/tests/${token}/submit`, "POST", body),
 };
 
 export const resultsApi = {
   forTest: (id: string) => request<TestResults>(`/tests/${id}/results`),
-  attempt: (id: string) => request<AttemptDetail>(`/attempts/${id}`),
+  attempt: (id: string, lang?: string) => request<AttemptDetail>(`/attempts/${id}${lang ? `?lang=${lang}` : ""}`),
 };
 
 // ----------------------- Bank / Books / Reports -----------------------
@@ -328,7 +332,14 @@ export interface AdminTeacher {
   last_test_at: string | null;
 }
 
+export interface LLMProvider {
+  name: string;
+  model: string;
+  cooling_seconds: number;
+}
+
 export const adminApi = {
+  llm: () => request<LLMProvider[]>("/admin/llm"),
   stats: () => request<AdminStats>("/admin/stats"),
   teachers: () => request<AdminTeacher[]>("/admin/teachers"),
   setPlan: (id: string, plan: Plan) =>

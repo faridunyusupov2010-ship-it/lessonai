@@ -10,6 +10,7 @@ from .. import llm
 from ..db import get_db
 from ..deps import get_current_teacher
 from ..export import build_docx
+from ..translate import localize_explanations
 from ..models import (
     Attempt,
     Plan,
@@ -17,6 +18,7 @@ from ..models import (
     Teacher,
     Test,
     BookUnit,
+    ExplanationTranslation,
     TestQuestion,
 )
 from ..schemas import (
@@ -172,10 +174,18 @@ def list_tests(
 @router.get("/tests/{test_id}", response_model=TestOut)
 def get_test(
     test_id: uuid.UUID,
+    lang: str | None = None,
     db: Session = Depends(get_db),
     teacher: Teacher = Depends(get_current_teacher),
 ):
-    return _test_to_out(_get_owned_test(db, test_id, teacher))
+    test = _get_owned_test(db, test_id, teacher)
+    out = _test_to_out(test)
+    if lang:
+        expl = localize_explanations(db, [tq.question for tq in test.test_questions], lang)
+        for q in out.questions:
+            if q.id in expl:
+                q.explanation = expl[q.id]
+    return out
 
 
 @router.patch("/tests/{test_id}", response_model=TestOut)
@@ -246,6 +256,7 @@ def update_question(
     question.correct_answer = body.correct_answer
     question.explanation = body.explanation
     question.ai_generated = False
+    db.execute(delete(ExplanationTranslation).where(ExplanationTranslation.question_id == question.id))
     db.commit()
     return QuestionOut.model_validate(question)
 

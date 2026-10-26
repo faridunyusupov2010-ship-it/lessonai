@@ -13,7 +13,7 @@ import { BankPicker } from "@/components/BankParts";
 export default function TestPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { t, errText } = useI18n();
+  const { t, lang, errText } = useI18n();
   const [test, setTest] = useState<Test | null>(null);
   const [title, setTitle] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -23,14 +23,14 @@ export default function TestPage() {
 
   useEffect(() => {
     api
-      .getTest(id)
+      .getTest(id, lang)
       .then((x) => {
         setTest(x);
         setTitle(x.title);
       })
       .catch((e) => setError(errText(e)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, lang]);
 
   if (error && !test) {
     return (

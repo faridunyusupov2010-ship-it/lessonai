@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { adminApi, type AdminStats, type AdminTeacher, type Plan } from "@/lib/api";
+import { adminApi, type AdminStats, type AdminTeacher, type LLMProvider, type Plan } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useI18n, type Key } from "@/lib/i18n";
 import { ErrorNote, Input, cn } from "@/components/ui";
@@ -12,6 +12,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [rows, setRows] = useState<AdminTeacher[] | null>(null);
   const [search, setSearch] = useState("");
+  const [providers, setProviders] = useState<LLMProvider[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const locale = lang === "tg" ? "tg-TJ" : lang;
 
@@ -19,6 +20,7 @@ export default function AdminPage() {
     if (!teacher?.is_admin) return;
     adminApi.stats().then(setStats).catch((e) => setError(errText(e)));
     adminApi.teachers().then(setRows).catch((e) => setError(errText(e)));
+    adminApi.llm().then(setProviders).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teacher?.is_admin]);
 
@@ -66,6 +68,28 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      <section className="rounded-lg border border-line bg-white p-4">
+        <h2 className="text-sm font-semibold">{t("admin_llm")}</h2>
+        {providers && providers.length === 0 && <p className="mt-2 text-sm text-mute">{t("admin_llm_none")}</p>}
+        <ol className="mt-2 divide-y divide-line">
+          {providers?.map((p, i) => (
+            <li key={p.name} className="flex items-center gap-3 py-2 text-sm">
+              <span className="w-5 text-mute">{i + 1}</span>
+              <span className="font-semibold">{p.name}</span>
+              <span className="min-w-0 flex-1 truncate text-mute">{p.model}</span>
+              <span
+                className={cn(
+                  "rounded-full px-2.5 py-0.5 text-xs font-semibold",
+                  p.cooling_seconds > 0 ? "bg-marker/50 text-ink" : "bg-ok/10 text-ok",
+                )}
+              >
+                {p.cooling_seconds > 0 ? t("admin_llm_cooling", { n: p.cooling_seconds }) : t("admin_llm_ready")}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </section>
 
       <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("admin_search")} aria-label={t("admin_search")} />
 

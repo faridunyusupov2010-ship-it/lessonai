@@ -309,3 +309,18 @@ class BookUnit(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     __table_args__ = (UniqueConstraint("teacher_id", "book", "label"),)
+
+
+class ExplanationTranslation(Base):
+    """Кэши тарҷумаи шарҳи саволҳо ба забонҳои гуногун (tg, ru, en)."""
+
+    __tablename__ = "explanation_translations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    question_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("questions.id", ondelete="CASCADE"), index=True
+    )
+    lang: Mapped[str] = mapped_column(String(5))
+    text: Mapped[str] = mapped_column(Text)
+
+    __table_args__ = (UniqueConstraint("question_id", "lang"),)

@@ -6,7 +6,7 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    healthCheckPath: /ping
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.3
@@ -25,4 +25,16 @@ services:
       - key: LLM_MODEL
         value: openai/gpt-oss-120b
       - key: LLM_API_KEY
+        sync: false
+      - key: LLM2_BASE_URL
+        value: https://generativelanguage.googleapis.com/v1beta/openai/
+      - key: LLM2_MODEL
+        value: gemini-2.5-flash
+      - key: LLM2_API_KEY
+        sync: false
+      - key: LLM3_BASE_URL
+        value: https://openrouter.ai/api/v1
+      - key: LLM3_MODEL
+        value: google/gemma-4-26b-a4b-it:free
+      - key: LLM3_API_KEY
         sync: false
