@@ -31,6 +31,7 @@ class TeacherOut(BaseModel):
     full_name: str
     ui_language: UILanguage
     plan: Plan
+    is_admin: bool = False
 
 
 class ProfileUpdate(BaseModel):
@@ -92,7 +93,7 @@ class GenerateIn(BaseModel):
     types: list[QuestionType] = Field(default=[QuestionType.multiple_choice], min_length=1)
     count: int = Field(default=10, ge=1, le=30)
     title: str | None = Field(default=None, max_length=255)
-    textbook_unit_id: int | None = None
+    book_unit_id: int | None = None
 
 
 class TestUpdate(BaseModel):
@@ -203,3 +204,82 @@ class AttemptDetail(BaseModel):
     score: float | None
     max_score: float | None
     results: list[QuestionResult]
+
+
+# ----------------------- Bank / Books / Reports -----------------------
+
+
+class BankToggleIn(BaseModel):
+    in_bank: bool
+
+
+class AddQuestionsIn(BaseModel):
+    question_ids: list[uuid.UUID] = Field(min_length=1, max_length=50)
+
+
+class CreateTestIn(BaseModel):
+    title: str = Field(min_length=1, max_length=255)
+    topic: str = Field(min_length=1, max_length=200)
+    level: CEFRLevel
+
+
+class BookUnitOut(BaseModel):
+    id: int
+    label: str
+    topics: list[str]
+
+
+class BookOut(BaseModel):
+    book: str
+    units: list[BookUnitOut]
+
+
+class BulkUnitsIn(BaseModel):
+    book: str = Field(min_length=1, max_length=255)
+    text: str = Field(min_length=1, max_length=10_000)
+
+
+class StudentSummary(BaseModel):
+    name: str
+    attempts: int
+    percent: float | None
+    last_at: datetime | None
+
+
+class TopicStat(BaseModel):
+    topic: str
+    correct: int
+    total: int
+    percent: float
+
+
+# ------------------------------ Admin ------------------------------
+
+
+class AdminStats(BaseModel):
+    teachers: int
+    pro_teachers: int
+    new_teachers_7d: int
+    tests: int
+    tests_today: int
+    attempts: int
+
+
+class AdminTeacher(BaseModel):
+    id: uuid.UUID
+    email: str
+    full_name: str
+    plan: Plan
+    created_at: datetime
+    tests: int
+    attempts: int
+    last_test_at: datetime | None
+
+
+class AdminPlanIn(BaseModel):
+    plan: Plan
+
+
+class AdminPlanOut(BaseModel):
+    id: uuid.UUID
+    plan: Plan

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Pencil, Trash2 } from "lucide-react";
 import type { Question, QuestionInput } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Button, ErrorNote, Field, Input, Textarea, cn } from "./ui";
@@ -13,9 +13,10 @@ interface Props {
   question: Question;
   onSave: (body: QuestionInput) => Promise<void>;
   onRemove: () => Promise<void>;
+  onToggleBank: (next: boolean) => Promise<void>;
 }
 
-export function QuestionBlock({ index, question: q, onSave, onRemove }: Props) {
+export function QuestionBlock({ index, question: q, onSave, onRemove, onToggleBank }: Props) {
   const { t, errText } = useI18n();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -85,6 +86,18 @@ export function QuestionBlock({ index, question: q, onSave, onRemove }: Props) {
       await onRemove();
     } catch (e) {
       setErr(errText(e));
+      setBusy(false);
+    }
+  }
+
+  async function toggleBank() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await onToggleBank(!q.in_bank);
+    } catch (e) {
+      setErr(errText(e));
+    } finally {
       setBusy(false);
     }
   }
@@ -212,6 +225,10 @@ export function QuestionBlock({ index, question: q, onSave, onRemove }: Props) {
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <span className="rounded bg-paper px-2 py-0.5 text-xs text-mute">{q.topic_tag}</span>
         <span className="flex-1" />
+        <Button size="sm" variant="ghost" onClick={toggleBank} disabled={busy} aria-pressed={q.in_bank}>
+          {q.in_bank ? <BookmarkCheck className="h-4 w-4 text-pen" aria-hidden /> : <Bookmark className="h-4 w-4" aria-hidden />}
+          {q.in_bank ? t("bank_in") : t("bank_add")}
+        </Button>
         <Button size="sm" variant="ghost" onClick={startEdit} disabled={busy}>
           <Pencil className="h-4 w-4" aria-hidden />
           {t("edit")}

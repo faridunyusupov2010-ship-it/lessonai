@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:3000"]
     # Дар dev ҷадвалҳо худкор сохта мешаванд. Дар production аз Alembic истифода баред.
     auto_create_tables: bool = True
+    # Почтаҳои админ, масалан ADMIN_EMAILS=["me@example.com"]
+    admin_emails: list[str] = []
 
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_api_key: str = ""

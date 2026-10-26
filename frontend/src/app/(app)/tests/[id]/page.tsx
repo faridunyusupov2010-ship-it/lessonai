@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { ArrowLeft, BarChart3, Check, Copy, FileDown, Printer, Trash2 } from "lucide-react";
-import { api, downloadDocx, type QuestionInput, type Test } from "@/lib/api";
+import { api, bankApi, downloadDocx, type QuestionInput, type Test } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Button, ErrorNote, FullSpinner, Input, StatusBadge } from "@/components/ui";
 import { QuestionBlock } from "@/components/QuestionBlock";
+import { BankPicker } from "@/components/BankParts";
 
 export default function TestPage() {
   const { id } = useParams<{ id: string }>();
@@ -71,6 +72,11 @@ export default function TestPage() {
 
   async function saveQuestion(qid: string, body: QuestionInput) {
     const updated = await api.updateQuestion(qid, body);
+    setTest((cur) => cur && { ...cur, questions: cur.questions.map((q) => (q.id === qid ? updated : q)) });
+  }
+
+  async function toggleBank(qid: string, next: boolean) {
+    const updated = await bankApi.setBank(qid, next);
     setTest((cur) => cur && { ...cur, questions: cur.questions.map((q) => (q.id === qid ? updated : q)) });
   }
 
@@ -182,6 +188,8 @@ export default function TestPage() {
 
       {error && <ErrorNote>{error}</ErrorNote>}
 
+      <BankPicker test={test} onAdded={setTest} />
+
       <article className="sheet">
         <header className="space-y-3 border-b border-line/70 py-6 pl-14 pr-4 sm:pl-[4.5rem] sm:pr-8">
           <label htmlFor="title" className="sr-only">
@@ -216,6 +224,7 @@ export default function TestPage() {
               question={q}
               onSave={(body) => saveQuestion(q.id, body)}
               onRemove={() => removeQuestion(q.id)}
+              onToggleBank={(next) => toggleBank(q.id, next)}
             />
           ))}
         </ol>

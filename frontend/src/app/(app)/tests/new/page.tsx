@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { api, type Level, type QType } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { api, bankApi, booksApi, type Book, type Level, type QType } from "@/lib/api";
 import { useI18n, type Key } from "@/lib/i18n";
 import { Button, ErrorNote, Field, Input, cn } from "@/components/ui";
 
@@ -40,6 +41,43 @@ export default function NewTestPage() {
   const [title, setTitle] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [bookName, setBookName] = useState("");
+  const [unitId, setUnitId] = useState(0);
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const tp = p.get("topic");
+    if (tp) setTopic(tp);
+    booksApi
+      .list()
+      .then(setBooks)
+      .catch(() => {});
+  }, []);
+
+  const units = books.find((b) => b.book === bookName)?.units ?? [];
+
+  function pickUnit(id: number) {
+    setUnitId(id);
+    const u = units.find((x) => x.id === id);
+    if (u) setTopic(u.topics.join(", "));
+  }
+
+  async function createEmpty() {
+    setError(null);
+    setLoading(true);
+    try {
+      const test = await bankApi.createTest({
+        title: title.trim() || topic.trim() || t("new_test"),
+        topic: topic.trim() || t("new_test"),
+        level,
+      });
+      router.push(`/tests/${test.id}`);
+    } catch (err) {
+      setError(errText(err));
+      setLoading(false);
+    }
+  }
 
   const toggle = (id: QType) =>
     setTypes((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
@@ -59,6 +97,7 @@ export default function NewTestPage() {
         types,
         count,
         title: title.trim() || undefined,
+        book_unit_id: unitId || undefined,
       });
       router.push(`/tests/${test.id}`);
     } catch (err) {
@@ -78,6 +117,53 @@ export default function NewTestPage() {
         <SkeletonSheet title={t("generating")} hint={t("generating_hint")} />
       ) : (
         <form onSubmit={submit} className="space-y-6">
+          <div className="space-y-2">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label={t("gen_book")} htmlFor="book">
+                <select
+                  id="book"
+                  value={bookName}
+                  onChange={(e) => {
+                    setBookName(e.target.value);
+                    setUnitId(0);
+                  }}
+                  className="h-11 w-full rounded-md border border-line bg-white px-3 text-[15px]"
+                >
+                  <option value="">{t("gen_none")}</option>
+                  {books.map((b) => (
+                    <option key={b.book} value={b.book}>
+                      {b.book}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={t("gen_unit")} htmlFor="unit">
+                <select
+                  id="unit"
+                  value={unitId}
+                  disabled={!bookName}
+                  onChange={(e) => pickUnit(Number(e.target.value))}
+                  className="h-11 w-full rounded-md border border-line bg-white px-3 text-[15px] disabled:opacity-60"
+                >
+                  <option value={0}>-</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.label}: {u.topics.join(", ")}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            {books.length === 0 && (
+              <p className="text-sm text-mute">
+                {t("gen_book_hint")}{" "}
+                <Link href="/books" className="font-semibold text-pen hover:underline">
+                  {t("nav_books")}
+                </Link>
+              </p>
+            )}
+          </div>
+
           <Field label={t("topic")} htmlFor="topic">
             <Input
               id="topic"
@@ -159,9 +245,14 @@ export default function NewTestPage() {
           </Field>
 
           {error && <ErrorNote>{error}</ErrorNote>}
-          <Button type="submit" className="w-full sm:w-auto">
-            {t("generate_btn")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button type="submit" className="w-full sm:w-auto">
+              {t("generate_btn")}
+            </Button>
+            <Button variant="ghost" onClick={createEmpty} className="w-full sm:w-auto">
+              {t("empty_from_bank")}
+            </Button>
+          </div>
         </form>
       )}
 

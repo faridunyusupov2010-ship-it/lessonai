@@ -3,7 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from ..db import get_db
-from ..deps import get_current_teacher
+from ..deps import get_current_teacher, is_admin_email
 from ..models import Teacher
 from ..schemas import LoginIn, ProfileUpdate, RegisterIn, TeacherOut, TokenOut
 from ..security import create_access_token, hash_password, verify_password
@@ -11,10 +11,16 @@ from ..security import create_access_token, hash_password, verify_password
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
+def teacher_out(teacher: Teacher) -> TeacherOut:
+    out = TeacherOut.model_validate(teacher)
+    out.is_admin = is_admin_email(teacher.email)
+    return out
+
+
 def _token_response(teacher: Teacher) -> TokenOut:
     return TokenOut(
         access_token=create_access_token(str(teacher.id)),
-        teacher=TeacherOut.model_validate(teacher),
+        teacher=teacher_out(teacher),
     )
 
 
@@ -44,7 +50,7 @@ def login(body: LoginIn, db: Session = Depends(get_db)):
 
 @router.get("/me", response_model=TeacherOut)
 def me(teacher: Teacher = Depends(get_current_teacher)):
-    return teacher
+    return teacher_out(teacher)
 
 
 @router.patch("/me", response_model=TeacherOut)
@@ -56,4 +62,4 @@ def update_me(
     if body.ui_language is not None:
         teacher.ui_language = body.ui_language
     db.commit()
-    return teacher
+    return teacher_out(teacher)

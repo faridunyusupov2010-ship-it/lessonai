@@ -12,6 +12,7 @@ export interface Teacher {
   full_name: string;
   ui_language: UILang;
   plan: "free" | "pro";
+  is_admin?: boolean;
 }
 
 export interface Question {
@@ -57,6 +58,7 @@ export interface GenerateBody {
   types: QType[];
   count: number;
   title?: string;
+  book_unit_id?: number;
 }
 
 export class ApiError extends Error {
@@ -243,4 +245,92 @@ export const studentApi = {
 export const resultsApi = {
   forTest: (id: string) => request<TestResults>(`/tests/${id}/results`),
   attempt: (id: string) => request<AttemptDetail>(`/attempts/${id}`),
+};
+
+// ----------------------- Bank / Books / Reports -----------------------
+
+export interface BookUnit {
+  id: number;
+  label: string;
+  topics: string[];
+}
+
+export interface Book {
+  book: string;
+  units: BookUnit[];
+}
+
+export interface StudentSummary {
+  name: string;
+  attempts: number;
+  percent: number | null;
+  last_at: string | null;
+}
+
+export interface TopicStat {
+  topic: string;
+  correct: number;
+  total: number;
+  percent: number;
+}
+
+export const bankApi = {
+  list: (p: { level?: Level; type?: QType; q?: string }) => {
+    const sp = new URLSearchParams();
+    if (p.level) sp.set("level", p.level);
+    if (p.type) sp.set("type", p.type);
+    if (p.q?.trim()) sp.set("q", p.q.trim());
+    const qs = sp.toString();
+    return request<Question[]>(`/bank${qs ? `?${qs}` : ""}`);
+  },
+  setBank: (id: string, in_bank: boolean) =>
+    request<Question>(`/questions/${id}/bank`, "PATCH", { in_bank }),
+  createTest: (b: { title: string; topic: string; level: Level }) =>
+    request<Test>("/tests", "POST", b),
+  addToTest: (testId: string, ids: string[]) =>
+    request<Test>(`/tests/${testId}/questions`, "POST", { question_ids: ids }),
+};
+
+export const booksApi = {
+  list: () => request<Book[]>("/books"),
+  bulk: (book: string, text: string) => request<Book[]>("/books/units/bulk", "POST", { book, text }),
+  deleteUnit: (id: number) => request<void>(`/books/units/${id}`, "DELETE"),
+  deleteBook: (book: string) => request<void>(`/books?book=${encodeURIComponent(book)}`, "DELETE"),
+};
+
+export const reportsApi = {
+  students: () => request<StudentSummary[]>("/reports/students"),
+  topics: (student?: string) =>
+    request<TopicStat[]>(`/reports/topics${student ? `?student=${encodeURIComponent(student)}` : ""}`),
+};
+
+// ------------------------------ Admin ------------------------------
+
+export type Plan = "free" | "pro";
+
+export interface AdminStats {
+  teachers: number;
+  pro_teachers: number;
+  new_teachers_7d: number;
+  tests: number;
+  tests_today: number;
+  attempts: number;
+}
+
+export interface AdminTeacher {
+  id: string;
+  email: string;
+  full_name: string;
+  plan: Plan;
+  created_at: string;
+  tests: number;
+  attempts: number;
+  last_test_at: string | null;
+}
+
+export const adminApi = {
+  stats: () => request<AdminStats>("/admin/stats"),
+  teachers: () => request<AdminTeacher[]>("/admin/teachers"),
+  setPlan: (id: string, plan: Plan) =>
+    request<{ id: string; plan: Plan }>(`/admin/teachers/${id}`, "PATCH", { plan }),
 };

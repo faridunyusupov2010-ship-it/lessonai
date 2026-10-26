@@ -16,6 +16,8 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         sync: false
+      - key: ADMIN_EMAILS
+        sync: false
       - key: AUTO_CREATE_TABLES
         value: "true"
       - key: LLM_BASE_URL

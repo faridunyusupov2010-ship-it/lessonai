@@ -288,3 +288,24 @@ class AttemptAnswer(Base):
     question: Mapped[Question] = relationship()
 
     __table_args__ = (UniqueConstraint("attempt_id", "question_id"),)
+
+
+# ------------------------ Teacher's own books ------------------------
+
+
+class BookUnit(Base):
+    """Unit-и китоби омӯзгор. Мавзӯъҳоро худи омӯзгор аз мундариҷаи китобаш ворид мекунад
+    (мо мазмуни китобҳои чопиро нигоҳ намедорем)."""
+
+    __tablename__ = "book_units"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    teacher_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("teachers.id", ondelete="CASCADE"), index=True
+    )
+    book: Mapped[str] = mapped_column(String(255))  # масалан "English File Elementary"
+    label: Mapped[str] = mapped_column(String(50))  # масалан "3A"
+    topics: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+
+    __table_args__ = (UniqueConstraint("teacher_id", "book", "label"),)

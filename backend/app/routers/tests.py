@@ -16,8 +16,8 @@ from ..models import (
     Question,
     Teacher,
     Test,
+    BookUnit,
     TestQuestion,
-    TextbookUnit,
 )
 from ..schemas import (
     GenerateIn,
@@ -87,14 +87,15 @@ def generate_test(
     _check_quota(db, teacher)
 
     unit_context = None
-    if body.textbook_unit_id is not None:
-        unit = db.get(TextbookUnit, body.textbook_unit_id)
-        if unit is None:
-            raise HTTPException(status.HTTP_404_NOT_FOUND, "Textbook unit not found")
-        unit_context = (
-            f"{unit.textbook.title} {unit.textbook.edition_level}, "
-            f"Unit {unit.number}: {unit.title}; topics: {', '.join(unit.topics)}"
+    if body.book_unit_id is not None:
+        unit = db.scalar(
+            select(BookUnit).where(
+                BookUnit.id == body.book_unit_id, BookUnit.teacher_id == teacher.id
+            )
         )
+        if unit is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "Book unit not found")
+        unit_context = f"{unit.book}, unit {unit.label}: {', '.join(unit.topics)}"
 
     try:
         generated = llm.generate_questions(
@@ -118,7 +119,6 @@ def generate_test(
         title=(body.title or f"{body.topic.strip()} ({body.level.value})").strip(),
         topic=body.topic.strip(),
         level=body.level,
-        textbook_unit_id=body.textbook_unit_id,
     )
     db.add(test)
     db.flush()

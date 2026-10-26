@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from .config import settings
 from .db import engine, get_db
 from .models import Base
-from .routers import auth, public, results, tests
+from .routers import admin, auth, bank, books, public, reports, results, tests
 
 
 @asynccontextmanager
@@ -33,6 +33,10 @@ app.include_router(auth.router)
 app.include_router(tests.router)
 app.include_router(public.router)
 app.include_router(results.router)
+app.include_router(bank.router)
+app.include_router(books.router)
+app.include_router(reports.router)
+app.include_router(admin.router)
 
 
 @app.get("/health")
